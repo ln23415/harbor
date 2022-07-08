@@ -57,7 +57,7 @@ var (
 			resize: false,
 		},
 		icon.DigestOfIconWASM: {
-			path: 	"./icons/wasm.png",
+			path:   "./icons/wasm.png",
 			resize: true,
 		},
 		icon.DigestOfIconDefault: {

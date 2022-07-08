@@ -19,7 +19,6 @@ import (
 	"context"
 	stderrors "errors"
 	"fmt"
-	"github.com/goharbor/harbor/src/controller/artifact/processor/wasm"
 	"strings"
 	"time"
 
@@ -29,6 +28,7 @@ import (
 	"github.com/goharbor/harbor/src/controller/artifact/processor/chart"
 	"github.com/goharbor/harbor/src/controller/artifact/processor/cnab"
 	"github.com/goharbor/harbor/src/controller/artifact/processor/image"
+	"github.com/goharbor/harbor/src/controller/artifact/processor/wasm"
 	"github.com/goharbor/harbor/src/lib/icon"
 
 	"github.com/goharbor/harbor/src/controller/artifact/processor"
@@ -73,7 +73,7 @@ var (
 		image.ArtifactTypeImage: icon.DigestOfIconImage,
 		chart.ArtifactTypeChart: icon.DigestOfIconChart,
 		cnab.ArtifactTypeCNAB:   icon.DigestOfIconCNAB,
-		wasm.ArtifactTypeWASM: icon.DigestOfIconWASM,
+		wasm.ArtifactTypeWASM:   icon.DigestOfIconWASM,
 	}
 )
 

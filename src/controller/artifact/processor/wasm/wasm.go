@@ -27,17 +27,26 @@ import (
 
 // const definitions
 const (
-	// ArtifactTypeImage is the artifact type for image
-	ArtifactTypeWASM        = "WASM"
+	// ArtifactTypeWASM is the artifact type for image
+	ArtifactTypeWASM         = "WASM"
 	AdditionTypeBuildHistory = "BUILD_HISTORY"
-	mediaType        = "application/vnd.wasm.config.v1+json"
+
+	// AnnotationVariantKey and AnnotationVariantValue is available key-value pair to identify an annotation fashion wasm artifact
+	AnnotationVariantKey   = "module.wasm.image/variant"
+	AnnotationVariantValue = "compat"
+
+	// AnnotationHandlerKey and AnnotationHandlerValue is another available key-value pair to identify an annotation fashion wasm artifact
+	AnnotationHandlerKey   = "run.oci.handler"
+	AnnotationHandlerValue = "wasm"
+
+	MediaType = "application/vnd.wasm.config.v1+json"
 )
 
 func init() {
-	pc := &manifestV2Processor{}
+	pc := &Processor{}
 	pc.ManifestProcessor = base.NewManifestProcessor()
 	mediaTypes := []string{
-		mediaType,
+		MediaType,
 	}
 	if err := processor.Register(pc, mediaTypes...); err != nil {
 		log.Errorf("failed to register processor for media type %v: %v", mediaTypes, err)
@@ -45,22 +54,22 @@ func init() {
 	}
 }
 
-// manifestV2Processor processes image with OCI manifest and docker v2 manifest
-type manifestV2Processor struct {
+// Processor processes image with OCI manifest and docker v2 manifest
+type Processor struct {
 	*base.ManifestProcessor
 }
 
-func (m *manifestV2Processor) AbstractMetadata(ctx context.Context, art *artifact.Artifact, manifest_body []byte) error {
-
+func (m *Processor) AbstractMetadata(ctx context.Context, art *artifact.Artifact, manifest_body []byte) error {
 	art.ExtraAttrs = map[string]interface{}{}
-	art.ExtraAttrs["ArtifactType"] = "WebAssembly"
-
 	manifest := &v1.Manifest{}
 	if err := json.Unmarshal(manifest_body, manifest); err != nil {
 		return err
 	}
 
-	if manifest.Annotations["module.wasm.image/variant"]=="compat" || manifest.Annotations["run.oci.handler"]=="wasm" {
+	if art.ExtraAttrs == nil {
+		art.ExtraAttrs = map[string]interface{}{}
+	}
+	if manifest.Annotations[AnnotationVariantKey] == AnnotationVariantValue || manifest.Annotations[AnnotationHandlerKey] == AnnotationHandlerValue {
 
 		// for annotation way
 		config := &v1.Image{}
@@ -68,9 +77,6 @@ func (m *manifestV2Processor) AbstractMetadata(ctx context.Context, art *artifac
 			return err
 		}
 		art.ExtraAttrs["manifest.config.mediaType"] = manifest.Config.MediaType
-		if art.ExtraAttrs == nil {
-			art.ExtraAttrs = map[string]interface{}{}
-		}
 		art.ExtraAttrs["created"] = config.Created
 		art.ExtraAttrs["architecture"] = config.Architecture
 		art.ExtraAttrs["os"] = config.OS
@@ -82,17 +88,17 @@ func (m *manifestV2Processor) AbstractMetadata(ctx context.Context, art *artifac
 			author = config.Config.Labels["maintainer"]
 		}
 		art.ExtraAttrs["author"] = author
-	}else {
+	} else {
 
 		// for wasm-to-oci way
-		art.ExtraAttrs["manifest.config.mediaType"] = mediaType
+		art.ExtraAttrs["manifest.config.mediaType"] = MediaType
 		art.ExtraAttrs["manifest.layers.mediaType"] = manifest.Layers[0].MediaType
 		art.ExtraAttrs["org.opencontainers.image.title"] = manifest.Layers[0].Annotations["org.opencontainers.image.title"]
 	}
 	return nil
 }
 
-func (m *manifestV2Processor) AbstractAddition(ctx context.Context, artifact *artifact.Artifact, addition string) (*processor.Addition, error) {
+func (m *Processor) AbstractAddition(ctx context.Context, artifact *artifact.Artifact, addition string) (*processor.Addition, error) {
 
 	if addition != AdditionTypeBuildHistory {
 		return nil, errors.New(nil).WithCode(errors.BadRequestCode).
@@ -121,10 +127,10 @@ func (m *manifestV2Processor) AbstractAddition(ctx context.Context, artifact *ar
 	}, nil
 }
 
-func (m *manifestV2Processor) GetArtifactType(ctx context.Context, artifact *artifact.Artifact) string {
+func (m *Processor) GetArtifactType(ctx context.Context, artifact *artifact.Artifact) string {
 	return ArtifactTypeWASM
 }
 
-func (m *manifestV2Processor) ListAdditionTypes(ctx context.Context, artifact *artifact.Artifact) []string {
+func (m *Processor) ListAdditionTypes(ctx context.Context, artifact *artifact.Artifact) []string {
 	return []string{AdditionTypeBuildHistory}
 }
